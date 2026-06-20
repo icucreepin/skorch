@@ -488,6 +488,8 @@ def noop(*args, **kwargs):
 def open_file_like(f, mode):
     """Wrapper for opening a file"""
     if isinstance(f, (str, pathlib.Path)):
+        if ".." in str(f):
+            raise ValueError("Invalid file path")
         file_like = open(f, mode)
     else:
         file_like = f
