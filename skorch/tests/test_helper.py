@@ -437,7 +437,6 @@ class TestSliceDataset:
             self, slds, y, classifier_module):
         from sklearn.model_selection import GridSearchCV
         from skorch import NeuralNetClassifier
-        from skorch.utils import to_numpy
 
         net = NeuralNetClassifier(
             classifier_module,
@@ -451,16 +450,12 @@ class TestSliceDataset:
         gs = GridSearchCV(
             net, params, refit=False, cv=3, scoring='accuracy', error_score='raise'
         )
-        # TODO: after sklearn > 1.6 is released, the to_numpy call should no longer be
-        # required and be removed, see:
-        # https://github.com/skorch-dev/skorch/pull/1078#discussion_r1887197261
-        gs.fit(slds, to_numpy(y))  # does not raise
+        gs.fit(slds, y)  # does not raise
 
     def test_grid_search_with_slds_and_internal_split_works(
             self, slds, y, classifier_module):
         from sklearn.model_selection import GridSearchCV
         from skorch import NeuralNetClassifier
-        from skorch.utils import to_numpy
 
         net = NeuralNetClassifier(classifier_module)
         params = {
@@ -470,10 +465,7 @@ class TestSliceDataset:
         gs = GridSearchCV(
             net, params, refit=True, cv=3, scoring='accuracy', error_score='raise'
         )
-        # TODO: after sklearn > 1.6 is released, the to_numpy call should no longer be
-        # required and be removed, see:
-        # https://github.com/skorch-dev/skorch/pull/1078#discussion_r1887197261
-        gs.fit(slds, to_numpy(y))  # does not raise
+        gs.fit(slds, y)  # does not raise
 
     def test_grid_search_with_slds_X_and_slds_y(
             self, slds, slds_y, classifier_module):
@@ -562,13 +554,13 @@ class TestPredefinedSplit():
         pickle.dumps(train_split)
 
 
+@pytest.mark.skipif(not pandas_installed, reason='pandas is not installed')
 class TestDataFrameTransformer:
     @pytest.fixture
     def transformer_cls(self):
         from skorch.helper import DataFrameTransformer
         return DataFrameTransformer
 
-    @pytest.mark.skipif(not pandas_installed, reason='pandas is not installed')
     @pytest.fixture
     def df(self):
         """DataFrame containing float, int, category types"""
@@ -645,27 +637,27 @@ class TestDataFrameTransformer:
     ])
     def test_invalid_dtype_raises(self, transformer_cls, df, data):
         df = df.assign(invalid=data)
-        with pytest.raises(TypeError) as exc:
+        expected = (
+            r"The following columns have dtypes that cannot be "
+            r"interpreted as numerical dtypes: invalid \(object|str\)"
+        )
+        with pytest.raises(TypeError, match=expected):
             transformer_cls().fit_transform(df)
-
-        msg = exc.value.args[0]
-        expected = ("The following columns have dtypes that cannot be "
-                    "interpreted as numerical dtypes: invalid (object)")
-        assert msg == expected
 
     def test_two_invalid_dtypes_raises(self, transformer_cls, df):
         df = df.assign(
             invalid0=np.array([object, object, object]),
             invalid1=np.array(['foo', 'bar', 'baz']),
         )
-        with pytest.raises(TypeError) as exc:
+        expected = (
+            r"The following columns have dtypes that cannot be "
+            r"interpreted as numerical dtypes: invalid0 \(object\), "
+            # TODO: With pandas 2, the dtype is object, with pandas 3, it's str.
+            # Once Python 3.10 and hence pandas 2.0 is dropped, only match str.
+            r"invalid1 \(object|str\)"
+        )
+        with pytest.raises(TypeError, match=expected):
             transformer_cls().fit_transform(df)
-
-        msg = exc.value.args[0]
-        expected = ("The following columns have dtypes that cannot be "
-                    "interpreted as numerical dtypes: invalid0 (object), "
-                    "invalid1 (object)")
-        assert msg == expected
 
     @pytest.mark.parametrize('dtype', [np.float16, np.float32, np.float64])
     def test_set_float_dtype(self, transformer_cls, df, dtype):

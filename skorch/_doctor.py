@@ -7,6 +7,7 @@ from collections.abc import Mapping
 from functools import partial
 
 import numpy as np
+from sklearn.base import BaseEstimator
 from sklearn.exceptions import NotFittedError
 from sklearn.utils.validation import check_is_fitted as sk_check_is_fitted
 import torch
@@ -211,7 +212,7 @@ def add_grad_hooks(net, match_fn=None):
     return recs_grad, recs_param_update, handles
 
 
-class SkorchDoctor:
+class SkorchDoctor(BaseEstimator):
     """SkorchDoctor helps you better understand and debug neural net training.
 
     By providing records activations, gradienst, and parameter updates, as well
@@ -361,7 +362,7 @@ class SkorchDoctor:
       This data structure seems to be a bit complicated at first but its use is
       quite straightforward. E.g. to get the update of the parameter called
       "dense0.weight" of the "module" in the last training step, use
-      ``doctor.paramter_udpate_recs_['module'][-1]['dense0.weight]``.
+      ``doctor.parameter_udpate_recs_['module'][-1]['dense0.weight]``.
 
     fitted_ : bool
       Whether the instance has been fitted.
@@ -439,6 +440,14 @@ class SkorchDoctor:
         self.num_steps_ = len(self.activation_recs_[self.module_names_[0]])
         self.fitted_ = True
         return self
+
+    def __sklearn_is_fitted__(self):
+        """This method is called when sklearn's ``check_is_fitted`` is used.
+
+        Explained here:
+        https://scikit-learn.org/stable/auto_examples/developing_estimators/sklearn_is_fitted.html
+        """
+        return getattr(self, "fitted_", False)
 
     def get_layer_names(self):
         """Return the names of all layers/modules
@@ -902,7 +911,7 @@ class SkorchDoctor:
           The name of the specific parameter that should be plotted.
 
         module_name : str (default='module')
-          The name of the module that the paramter belongs to. By default, it is
+          The name of the module that the parameter belongs to. By default, it is
           called "module" in skorch, but it's possible to define custom module
           names, in which case the corresponding name should be chosen.
 

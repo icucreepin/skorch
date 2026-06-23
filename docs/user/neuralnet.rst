@@ -53,7 +53,7 @@ Only when the :func:`~skorch.net.NeuralNet.fit` or
 attributes of the net, such as the ``module``, initialized. The name of an
 initialized attribute always ends on an underscore; e.g., the initialized
 ``module`` is called ``module_`` (this is the same nomenclature as sklearn
-uses). Thefore, you always know which attributes you set and which ones were
+uses). Therefore, you always know which attributes you set and which ones were
 created by :class:`.NeuralNet`.
 
 The only exception is the :ref:`history <history>` attribute, which is
@@ -298,8 +298,9 @@ As the name suggests, this determines which computation device should
 be used. If set to ``'cuda'``, the incoming data will be transferred to
 CUDA before being passed to the PyTorch :class:`~torch.nn.Module`. The
 device parameter adheres to the general syntax of the PyTorch device
-parameter. If you want to prevent skorch from handling the device, set
-``device=None``.
+parameter. If set to ``'auto'``, hardware acceleration like CUDA is being
+used if available, and CPU otherwise. If you want to prevent skorch from
+handling the device, set ``device=None``.
 
 initialize()
 ^^^^^^^^^^^^

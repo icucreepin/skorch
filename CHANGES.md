@@ -6,7 +6,45 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+
 ### Added
+
+- Add `device='auto'` to select hardware acceleration like CUDA when
+  available, and CPU otherwise.
+
+### Changed
+
+### Fixed
+
+## [1.4.0]
+
+### Added
+
+- Extend tensor conversion to numpy arrays to work with more device types (#1132)
+- Add sklearn metadata routing support: `NeuralNet` is now a metadata router + consumer, enabling `groups` and other metadata to flow through `Pipeline`/`GridSearchCV` (#1139)
+
+## [1.3.1]
+
+### Fixed
+
+- Compatibility with sklearn v1.8: `__sklearn_is_fitted__` returns a boolean (#1128)
+- Compatibility with sklearn v1.8: `SkorchDoctor` is now an sklearn `BaseEstimator` instance (#1128)
+
+## [1.3.0]
+
+### Fixed
+
+- Implement `__sklearn_is_fitted__` for skorch models, following [sklearn custom model protocol](https://scikit-learn.org/stable/auto_examples/developing_estimators/sklearn_is_fitted.html#sphx-glr-auto-examples-developing-estimators-sklearn-is-fitted-py) (#1119)
+
+## [1.2.0]
+
+### Added
+
+- Add Contributing Guidelines for skorch. (#1097)
+- Add an example of hyper-parameter optimization using [Optuna](https://optuna.org/) [here](https://github.com/skorch-dev/skorch/tree/master/examples/optuna) (#1098)
+- Add Example for Streaming Dataset(#1105)
+- Add pyproject.toml to Improve CI/CD and Tooling (#1108)
+
 ### Changed
 
 - Loading of skorch nets using pickle: When unpickling a skorch net, you may come across a PyTorch warning that goes: "FutureWarning: You are using torch.load with weights_only=False [...]"; to avoid this warning, pickle the net again and use the new pickle file (#1092)

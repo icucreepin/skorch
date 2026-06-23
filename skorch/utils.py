@@ -28,7 +28,6 @@ from torch.utils.data.dataset import Subset
 
 from skorch.exceptions import DeviceWarning
 from skorch.exceptions import NotInitializedError
-from ._version import Version
 
 try:
     import torch_geometric
@@ -60,6 +59,13 @@ def is_geometric_data_type(x):
     return isinstance(x, Data)
 
 
+def _check_device(device):
+    """Resolve special device shortcuts."""
+    if device == 'auto':
+        return 'cuda' if torch.cuda.is_available() else 'cpu'
+    return device
+
+
 # pylint: disable=not-callable
 def to_tensor(X, device, accept_sparse=False):
     """Turn input data to torch tensor.
@@ -78,7 +84,8 @@ def to_tensor(X, device, accept_sparse=False):
     device : str, torch.device
       The compute device to be used. If set to 'cuda', data in torch
       tensors will be pushed to cuda tensors before being sent to the
-      module.
+      module. If set to 'auto', hardware acceleration like CUDA is
+      being used if available, and CPU otherwise.
 
     accept_sparse : bool (default=False)
       Whether to accept scipy sparse matrices as input. If False,
@@ -90,6 +97,7 @@ def to_tensor(X, device, accept_sparse=False):
     output : torch Tensor
 
     """
+    device = _check_device(device)
     to_tensor_ = partial(to_tensor, device=device)
 
     if is_torch_data_type(X):
@@ -158,6 +166,9 @@ def to_numpy(X):
     if hasattr(X, 'is_mps') and X.is_mps:
         X = X.cpu()
 
+    if X.device.type != "cpu":
+        X = X.cpu()
+
     if X.requires_grad:
         X = X.detach()
 
@@ -183,9 +194,12 @@ def to_device(X, device):
 
     device : str, torch.device
         The compute device to be used. If device=None, return the input
-        unmodified
+        unmodified. If device='auto', hardware acceleration like CUDA
+        is being used if available, and CPU otherwise.
 
     """
+    device = _check_device(device)
+
     if device is None:
         return X
 
@@ -562,6 +576,7 @@ def get_map_location(target_device, fallback_device='cpu'):
     """
     if target_device is None:
         target_device = fallback_device
+    target_device = _check_device(target_device)
 
     map_location = torch.device(target_device)
 
@@ -771,21 +786,6 @@ def _check_f_arguments(caller_name, **kwargs):
             key = 'module_' if key == 'f_params' else key[2:] + '_'
             kwargs_module[key] = val
     return kwargs_module, kwargs_other
-
-
-def get_default_torch_load_kwargs():
-    """Returns the kwargs passed to torch.load that correspond to the current
-    torch version.
-
-    PyTorch switches from weights_only=False to True in version 2.6.0.
-
-    """
-    # TODO: Remove once PyTorch 2.5 is no longer supported
-    version_torch = Version(torch.__version__)
-    version_default_switch = Version('2.6.0')
-    if version_torch >= version_default_switch:
-        return {"weights_only": True}
-    return {"weights_only": False}
 
 
 class _TorchLoadUnpickler(pickle.Unpickler):
